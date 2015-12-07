@@ -84,7 +84,7 @@ int main()
 
 	MPI_Request send_request[2];
 	MPI_Request recv_request[2];
-	MPI_Status status[2];
+	MPI_Status status;
 
 	while (iteration_error > tolerance && iteration_count < max_iterations) {
 
@@ -97,13 +97,14 @@ int main()
 
 		// Send left boundary of small grid
 		if (left_proc != MPI_PROC_NULL) {
-			MPI_Isend(&local_Un[0], 1, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &send_request[0]);
-			printf("Sent %f from process %d to process %d\n", local_Un[0], my_rank, left_proc);
+			double test = 1;
+			MPI_Isend(&test, 1, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &send_request[0]);
+			printf("Sent %f from process %d to left process %d\n", local_Un[0], my_rank, left_proc);
 		}
 		// Send right boundary of small grid
 		if (right_proc != MPI_PROC_NULL) {
 			MPI_Isend(&local_Un[local_m - 1], 1, MPI_DOUBLE, right_proc, TAG, MPI_COMM_WORLD, &send_request[1]);
-			printf("Sent %f from process %d to process %d\n\n", local_Un[local_m - 1], my_rank, right_proc);
+			printf("Sent %f from process %d to right process %d\n\n", local_Un[local_m - 1], my_rank, right_proc);
 		}
 
 		// Update interior points
@@ -113,14 +114,17 @@ int main()
 
 		// Receive left boundary of small grid
 		if (left_proc != MPI_PROC_NULL) {
-			MPI_Irecv(&left_ghost_val, 1, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &request[1]);
+			MPI_Irecv(&left_ghost_val, 1, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &recv_request[0]);
 			printf("Received %f from process %d on process %d\n", left_ghost_val, left_proc, my_rank);
 		}
 		if (right_proc != MPI_PROC_NULL) {
 			// Receive right boundary of small grid
-			MPI_Irecv(&right_ghost_val, 1, MPI_DOUBLE, right_proc, TAG, MPI_COMM_WORLD, &request[1]);
+			MPI_Irecv(&right_ghost_val, 1, MPI_DOUBLE, right_proc, TAG, MPI_COMM_WORLD, &recv_request[1]);
 			printf("Received %f from process %d on process %d\n\n", right_ghost_val, right_proc, my_rank);
 		}
+
+		MPI_Wait(&recv_request[0], &status);
+		MPI_Wait(&recv_request[1], &status);
 
 		// Update the boundary points
 		if (left_bdry_condition == FALSE) {

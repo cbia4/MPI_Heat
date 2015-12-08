@@ -16,17 +16,13 @@ const int m = 16;
 int main() 
 {
 
-	// comm_sz, rank, boundary points
-	// initialize local boundary points
-	// value of neighbor processes
+	// Initialize p(comm_sz), my_rank
+	// Initialize global/local boundary points, dx
+	// Initialize Lproc, Rproc
 	int p, my_rank;
 	int Lproc, Rproc;
 	double a = 0.0, b = 1.0, local_a, local_b;
 	double dx = (b-a)/(m-1);
-
-	// Arrays to load in final values
-	double Un[m];
-	double Unp1[m];
 
 	// Initialize MPI
 	MPI_Init(NULL,NULL);
@@ -55,7 +51,7 @@ int main()
 
 	// Set Left Neighbor
 	if(my_rank % (m/p) == 0) {
-		Lproc = MPI_PROC_NULL;
+		Lproc = p - 1;
 		Lbdry_condition = 1;
 		local_Un[0] = exact_solution(a);
 
@@ -65,7 +61,7 @@ int main()
 
 	// Set Right Neighbor
 	if((my_rank + 1) % (m/p) == 0) {
-		Rproc = MPI_PROC_NULL;
+		Rproc = 0;
 		Rbdry_condition = 1;
 		local_Un[local_m-1] = exact_solution(b);
 	} else {
@@ -79,51 +75,50 @@ int main()
 
 	// Initialize the iteration counter
 	int iteration_count = 0;
-	double Lghost_val = 0;
-	double Rghost_val = 0;
+	//double Lghost_val = 0;
+	//double Rghost_val = 0;
 
 	MPI_Request reqs[4];
-	MPI_Status stats[2];
+	MPI_Status stats[4];
 
-	while(iteration_error > tolerance && iteration_count < 10) {
+	while(iteration_error > tolerance && iteration_count < 2) {
 		iteration_count++;
 
-		//printf("iteration count = %d\n", iteration_count);
+		double Lghost_val = 0;
+		double Rghost_val = 0;
 
+		MPI_Isend(&local_Un[0], 1, MPI_DOUBLE, Lproc, 2, MPI_COMM_WORLD, &reqs[2]);
+		MPI_Isend(&local_Un[local_m-1], 1, MPI_DOUBLE, Rproc, 1, MPI_COMM_WORLD, &reqs[3]);
 
+		MPI_Irecv(&Rghost_val, 1, MPI_DOUBLE, Rproc, 2, MPI_COMM_WORLD, &reqs[0]);
+		MPI_Irecv(&Lghost_val, 1, MPI_DOUBLE, Lproc, 1, MPI_COMM_WORLD, &reqs[1]);
+		
+
+		// Update Left Boundary
 		if(Lbdry_condition == 1) {
 			local_Unp1[0] = exact_solution(a);
-		} else if(Rbdry_condition == 1) {
+		} else {
+			local_Unp1[0] = .5 * (local_Un[1] + Lghost_val - dx*dx*S(x(local_a,0,dx)));
+		}
+
+		// Update Right Boundary
+		if(Rbdry_condition == 1) {
 			local_Unp1[local_m-1] = exact_solution(b);
-		} 
+		} else {
+			local_Unp1[local_m-1] = .5 * (Rghost_val + local_Un[local_m-2] - dx*dx*S(x(local_a,local_m-1,dx)));
+		}
 
-		MPI_Isend(&local_Un[0], 1, MPI_DOUBLE, Lproc, 0, MPI_COMM_WORLD, &reqs[0]);
-		MPI_Isend(&local_Un[local_m - 1], 1, MPI_DOUBLE, Rproc, 1, MPI_COMM_WORLD, &reqs[1]);
-
-		//printf("Messages sent from process %d\n", my_rank);
-
-		// update the interior
+		// Update Interior
 		for(i = 1; i < local_m - 1; i++) {
 			local_Unp1[i] = .5 * ( local_Un[i+1] + local_Un[i-1] - dx*dx*S(x(local_a,i,dx)) );
 		}
 
-		MPI_Irecv(&Lghost_val, 1, MPI_DOUBLE, Lproc, 0, MPI_COMM_WORLD, &reqs[2]);
-		MPI_Irecv(&Rghost_val, 1, MPI_DOUBLE, Rproc, 1, MPI_COMM_WORLD, &reqs[3]);
-
-		//printf("Messages received by process %d\n", my_rank);
-
-
-
-		// Update the boundary points
-		if(Lbdry_condition == 0)
-			local_Unp1[0] = .5 * ( local_Un[1] + Lghost_val - dx*dx*S(x(local_a,i,dx)));
 		
-		if(Rbdry_condition == 0)
-			local_Unp1[m-1] = .5 * (Rghost_val + local_Un[local_m - 1] - dx*dx*S(x(local_a,i,dx)));
 
-		//MPI_Waitall(4, reqs, stats);
+		MPI_Waitall(4, reqs, stats);
 
-		//printf("Bottom of the loop!\n");
+
+		/*
 
 		iteration_error = 0.0;
 		for(i = 0; i < local_m; i++) {
@@ -131,6 +126,8 @@ int main()
 			if(local_iteration_error > iteration_error)
 				iteration_error = local_iteration_error;
 		}
+
+		
 
 
 		if(my_rank != 0) {
@@ -144,18 +141,23 @@ int main()
 			}
 		}
 
+
 		// Broadcast the iteration_error to all processes
 		MPI_Bcast(&iteration_error, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+		*/
 		// Prepare for the next iteration
 		for(i = 0; i < local_m; i++) {
 			local_Un[i] = local_Unp1[i];
 		}
 
+		
+		MPI_Barrier(MPI_COMM_WORLD);
 
 	}
 
 
+	/*
 	double solution_error;
 	for(i = 0; i < local_m; i++) {
 		double local_solution_error = fabs( local_Unp1[i] - exact_solution(x(local_a,i,dx)) );
@@ -182,7 +184,20 @@ int main()
 
 	}
 
+	*/
+
 	MPI_Finalize();
+
+
+	printf("Process %d: ", my_rank);
+	for(i = 0; i < local_m; i++) {
+		printf("%.4f ",local_Un[i]);
+	}
+	printf("\n");
+	printf("\n");
+
+
+
 
 	return 0;
 }

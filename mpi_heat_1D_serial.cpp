@@ -50,7 +50,7 @@ double S(double x);                 // Definition of the source term.
 
 // Givens of the problem:
 const double a=0.0; const double b=1.0; // Interval [a, b] chosen.
-const int m=40;                         // Number of discretization points chosen.
+const int m=16;                         // Number of discretization points chosen.
 
 // Step sizes:
 const double dx=(b-a)/(m-1);
@@ -85,7 +85,7 @@ int main()
     // Recall that we say that the steady-state is reached when the maximum difference between
     // two iterates is less than or equal to the tolerance, i.e. max|Unp1-Un| <= tolerance.
 
-    while(iteration_error > tolerance && iteration_count < Max_Iter){
+    while(iteration_error > tolerance && iteration_count < 1){
         iteration_count++; // if(iteration_count % 1000 == 0) std::cout<<"iteration " << iteration_count << std::endl;
 
         // Treat the left and right boundary conditions:
@@ -108,6 +108,18 @@ int main()
         // Prepare for the next iteration:
         for(i=0; i< m; i++){
             Un[i]=Unp1[i];
+        }
+
+        int j;
+        for(i = 0; i < m; i++) {
+            printf("%.4f ", Un[i]);
+            if(j == 3){
+                printf("\n");
+                printf("\n");
+                j = 0;
+            }
+            else 
+                j++;
         }
 
 //        if(iteration_count % 1000 == 0) std::cout<< "The error between two iterates is " << iteration_error << std::endl;

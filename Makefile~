@@ -1,0 +1,4 @@
+send:
+	scp mpi_heat1D.cpp ucsb-train66@tscc-login.sdsc.edu:~/final
+	scp mpi_serial1D.cpp ucsb-train66@tscc-login.sdsc.edu:~/final
+

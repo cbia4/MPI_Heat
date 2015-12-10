@@ -120,15 +120,11 @@ int main() {
             MPI_Wait(&send_request[0], &status);
             MPI_Wait(&recv_request[0], &status);
             local_Unp1[0] = .5 * (local_Un[1] + left_ghost_val - dx * dx * S(x(0)));
-        } else {
-            local_Unp1[0] = exact_solution(a);
-        }
+        } 
         if (has_right_neighbor(rank, num_proc, m) == TRUE) {
             MPI_Wait(&send_request[1], &status);
             MPI_Wait(&recv_request[1], &status);
             local_Unp1[local_m - 1] = .5 * (right_ghost_val + local_Un[local_m - 2] - dx * dx * S(x(local_m - 1)));
-        } else {
-            local_Unp1[local_m - 1] = exact_solution(b);
         }
 
         // Compute the maximum error between 2 iterates to establish whether or not

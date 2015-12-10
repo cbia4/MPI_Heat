@@ -1,0 +1,37 @@
+
+PARALLEL_2D = 'max_2d_parallel'
+SERIAL_2D = 'max_2d_serial'
+
+task :clean do
+  puts "Cleaning up #{PARALLEL_2D}"
+  system("rm -fr #{PARALLEL_2D}")
+end
+
+task :compile do
+  puts "Compiling #{PARALLEL_2D}.cpp"
+  system("mpic++ #{PARALLEL_2D}.cpp -o #{PARALLEL_2D}")
+end
+
+task :default do
+  Rake::Task['clean'].execute
+  Rake::Task['compile'].execute
+  Rake::Task['triton'].execute
+  Rake::Task['run'].execute
+end
+
+task :run do
+  puts "Executing #{PARALLEL_2D}"
+  system("mpiexec -n 16 ./#{PARALLEL_2D}")
+end
+
+task :triton do 
+  puts "Copying #{PARALLEL_2D}.cpp to Triton"
+  system("scp ./#{PARALLEL_2D}.cpp ucsb-train23@tscc-login.sdsc.edu:~/final")
+end
+
+task :serial do
+  puts "Compiling #{SERIAL_2D}.cpp"
+  system("mpic++ #{SERIAL_2D}.cpp -o #{SERIAL_2D}")
+  puts "Executing #{SERIAL_2D}"
+  system("./#{SERIAL_2D}")
+end

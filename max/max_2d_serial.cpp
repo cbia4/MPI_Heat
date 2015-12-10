@@ -57,8 +57,8 @@ double sqr(double i);
 // Givens of the problem:
 const double a = 0.0; const double b = 1.0; // Interval [a, b] chosen.
 const double c = 0.0; const double d = 1.0; // Interval [c, d] chosen.
-const int m = 100;                       // Number of discretization points chosen in the x direction.
-const int n = 100;                       // Number of discretization points chosen in the y direction.
+const int m = 20;                       // Number of discretization points chosen in the x direction.
+const int n = 20;                       // Number of discretization points chosen in the y direction.
 
 // Step sizes:
 const double dx = (b - a) / (m - 1);
@@ -85,6 +85,13 @@ int main() {
             Un[i][j] = 0.0;
         }
     }
+
+    // for (i = 0; i < m; i++) {
+    //     Un[i][0] = exact_solution(a, y(i));
+    //     Un[i][n - 1] = exact_solution(b, y(i));
+    //     Un[0][i] = exact_solution(x(i), c);
+    //     Un[n - 1][i] = exact_solution(x(i), d);
+    // }
 
     // Treat the bottom and top boundary conditions for Un:
     for (i = 0; i < m; i++) {
@@ -122,6 +129,13 @@ int main() {
             Unp1[0][j] = exact_solution(a, y(j));
             Unp1[m - 1][j] = exact_solution(b, y(j));
         }
+
+        // for (i = 0; i < m; i++) {
+        //     Unp1[i][0] = exact_solution(a, y(i));
+        //     Unp1[i][n - 1] = exact_solution(b, y(i));
+        //     Unp1[0][i] = exact_solution(x(i), c);
+        //     Unp1[n - 1][i] = exact_solution(x(i), d);
+        // }
 
         for (i = 1; i < m - 1; i++) {
             for (j = 1; j < n - 1; j++) {
@@ -164,21 +178,21 @@ int main() {
     // double elapsedTime = endTime - startTime;
 
     // Output:
-    // std::cout                                                              << std::endl << std::endl;
-    // std::cout << "-------------------------------------------------------"               << std::endl;
-    // std::cout << "SUMMARY:"                                                 << std::endl << std::endl;
-    // std::cout << "The error between two iterates is "    << iteration_error << std::endl << std::endl;
-    // std::cout << "The maximum error in the solution is " << solution_error               << std::endl;
-    // std::cout << "-------------------------------------------------------"  << std::endl << std::endl;
+    std::cout                                                              << std::endl << std::endl;
+    std::cout << "-------------------------------------------------------"               << std::endl;
+    std::cout << "SUMMARY:"                                                 << std::endl << std::endl;
+    std::cout << "The error between two iterates is "    << iteration_error << std::endl << std::endl;
+    std::cout << "The maximum error in the solution is " << solution_error               << std::endl;
+    std::cout << "-------------------------------------------------------"  << std::endl << std::endl;
     // cout << "\tElapsted time: " << elapsedTime << endl << endl;
 
-    for (i = 0; i < m; i++) {
-        for (j = 0; j < n; j++) {
-            cout << exact_solution(x(i), y(j));
-            if (j != n - 1) cout << " ";
-        }
-        cout << endl;
-    }
+    // for (i = 0; i < m; i++) {
+    //     for (j = 0; j < n; j++) {
+    //         cout << exact_solution(x(i), y(j));
+    //         if (j != n - 1) cout << " ";
+    //     }
+    //     cout << endl;
+    // }
 
     return 0;
 }

@@ -50,7 +50,7 @@ double S(double x);                 // Definition of the source term.
 
 // Givens of the problem:
 const double a=0.0; const double b=1.0; // Interval [a, b] chosen.
-const int m=40;                         // Number of discretization points chosen.
+const int m=5;                         // Number of discretization points chosen.
 
 // Step sizes:
 const double dx=(b-a)/(m-1);

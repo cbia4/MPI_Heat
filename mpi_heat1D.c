@@ -97,8 +97,7 @@ int main()
 
 		// Send left boundary of small grid
 		if (left_proc != MPI_PROC_NULL) {
-			double test = 1;
-			MPI_Isend(&test, 1, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &send_request[0]);
+			MPI_Isend(&local_Un[local_m], 1, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &send_request[0]);
 			printf("Sent %f from process %d to left process %d\n", local_Un[0], my_rank, left_proc);
 		}
 		// Send right boundary of small grid

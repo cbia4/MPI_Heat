@@ -91,7 +91,6 @@ int main() {
     if (has_top_neighbor(rank, num_proc)) {
         top_proc = rank - sqrt(num_proc);
     } else {
-        top_proc = MPI_PROC_NULL;
         for (int i = 0; i < local_n; i++) {
             local_Un[i][0] = exact_solution(x(local_a, i), c);
         }
@@ -99,9 +98,8 @@ int main() {
 
     // INITIALIZE *BOTTOM* NEIGHBOR AND OUTER-POINTS
     if (has_bottom_neighbor(rank, num_proc)) {
-        bottom_proc = rank - sqrt(num_proc);
+        bottom_proc = rank + sqrt(num_proc);
     } else {
-        bottom_proc = MPI_PROC_NULL;
         for (int i = 0; i < local_n; i++) {
             local_Un[i][local_n - 1] = exact_solution(x(local_a, i), d);
         }
@@ -111,7 +109,6 @@ int main() {
     if (has_left_neighbor(rank, num_proc)) {
         left_proc = rank - 1;
     } else {
-        left_proc = MPI_PROC_NULL;
         for (int i = 0; i < local_n; i++) {
             local_Un[0][i] = exact_solution(a, y(local_c, i));
         }
@@ -121,7 +118,6 @@ int main() {
     if (has_right_neighbor(rank, num_proc)) {
         right_proc = rank + 1;
     } else {
-        right_proc = MPI_PROC_NULL;
         for (int i = 0; i < local_n; i++) {
             local_Un[local_n - 1][i] = exact_solution(b, y(local_c, i));
         }
@@ -143,40 +139,39 @@ int main() {
 
         int request_counter = 0;
 
-        // if (DEBUG) cout << "(" << rank << ") Sending ghost points" << endl;
 
         // SEND *TOP* GHOST POINTS
-        if (top_proc != MPI_PROC_NULL) {
+        if (has_top_neighbor(rank, num_proc)) {
             double top_neighbors[local_n];
             for (int i = 0; i < local_n; i++) {
                 top_neighbors[i] = local_Un[i][0];
             }
-            if (DEBUG) cout << "(" << rank << "):Top Sending " << top_neighbors << " to top:" << top_proc << endl;
+            if (DEBUG) cout << "(" << rank << ") Sending " << &top_neighbors << " to top:" << top_proc << endl;
             MPI_Isend(&top_neighbors, local_n, MPI_DOUBLE, top_proc, TAG, MPI_COMM_WORLD, &send_requests[0]);
             request_counter++;
         }
 
         // SEND *BOTTOM* GHOST POINTS
-        if (bottom_proc != MPI_PROC_NULL) {
+        if (has_bottom_neighbor(rank, num_proc)) {
             double bottom_neighbors[local_n];
             for (int i = 0; i < local_n; i++) {
                 bottom_neighbors[i] = local_Un[i][local_n - 1];
             }
-            if (DEBUG) cout << "(" << rank << "):Bottom Sending " << bottom_neighbors << " to bottom:" << bottom_proc << endl;
+            if (DEBUG) cout << "(" << rank << ") Sending " << &bottom_neighbors << " to bottom:" << bottom_proc << endl;
             MPI_Isend(&bottom_neighbors, local_n, MPI_DOUBLE, bottom_proc, TAG, MPI_COMM_WORLD, &send_requests[1]);
             request_counter++;
         }
 
         // SEND *LEFT* GHOST POINTS
-        if (left_proc != MPI_PROC_NULL) {
-            if (DEBUG) cout << "(" << rank << "):Left Sending " << local_Un[0] << " to left:" << left_proc << endl;
+        if (has_left_neighbor(rank, num_proc)) {
+            if (DEBUG) cout << "(" << rank << ") Sending " << &local_Un[0] << " to left:" << left_proc << endl;
             MPI_Isend(&local_Un[0], local_n, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &send_requests[2]);
             request_counter++;
         }
 
         // SEND *RIGHT* GHOST POINTS
-        if (right_proc != MPI_PROC_NULL) {
-            if (DEBUG) cout << "(" << rank << "):Right Sending " << local_Un[local_n - 1] << " to right:" << right_proc << endl;
+        if (has_right_neighbor(rank, num_proc)) {
+            if (DEBUG) cout << "(" << rank << ") Sending " << &local_Un[local_n - 1] << " to right:" << right_proc << endl;
             MPI_Isend(&local_Un[local_n - 1], local_n, MPI_DOUBLE, right_proc, TAG, MPI_COMM_WORLD, &send_requests[3]);
             request_counter++;
         }
@@ -208,25 +203,25 @@ int main() {
         if (DEBUG) cout << "(" << rank << ") Receiving ghost points" << endl;
 
         // RECEIVE *TOP* GHOST POINTS
-        if (top_proc != MPI_PROC_NULL) {
+        if (has_top_neighbor(rank, num_proc)) {
             MPI_Irecv(&top_ghost_val, local_n, MPI_DOUBLE, top_proc, TAG, MPI_COMM_WORLD, &receive_requests[0]);
             request_counter++;
         }
 
         // RECEIVE *BOTTOM* GHOST POINTS
-        if (bottom_proc != MPI_PROC_NULL) {
+        if (has_bottom_neighbor(rank, num_proc)) {
             MPI_Irecv(&bottom_ghost_val, local_n, MPI_DOUBLE, bottom_proc, TAG, MPI_COMM_WORLD, &receive_requests[1]);
             request_counter++;
         }
 
         // RECEIVE *LEFT* GHOST POINTS
-        if (left_proc != MPI_PROC_NULL) {
+        if (has_left_neighbor(rank, num_proc)) {
             MPI_Irecv(&left_ghost_val, local_n, MPI_DOUBLE, left_proc, TAG, MPI_COMM_WORLD, &receive_requests[2]);
             request_counter++;
         }
 
         // RECEIVE *RIGHT* GHOST POINTS
-        if (right_proc != MPI_PROC_NULL) {
+        if (has_right_neighbor(rank, num_proc)) {
             MPI_Irecv(&right_ghost_val, local_n, MPI_DOUBLE, right_proc, TAG, MPI_COMM_WORLD, &receive_requests[3]);
             request_counter++;
         }
@@ -236,25 +231,25 @@ int main() {
 
 
         // WAIT ON ALL REQUESTS
-        if (top_proc != MPI_PROC_NULL) {
+        if (has_top_neighbor(rank, num_proc)) {
             if (DEBUG) cout << "(" << rank << ") Waiting on top" << endl;
             MPI_Wait(&send_requests[0], MPI_STATUS_IGNORE);
             MPI_Wait(&receive_requests[0], MPI_STATUS_IGNORE);
             if (DEBUG) cout << "(" << rank << ") Top done waiting" << endl;
         }
-        if (bottom_proc != MPI_PROC_NULL) {
+        if (has_bottom_neighbor(rank, num_proc)) {
             if (DEBUG) cout << "(" << rank << ") Waiting on bottom" << endl;
             MPI_Wait(&send_requests[1], MPI_STATUS_IGNORE);
             MPI_Wait(&receive_requests[1], MPI_STATUS_IGNORE);
             if (DEBUG) cout << "(" << rank << ") Bottom done waiting" << endl;
         }
-        if (left_proc != MPI_PROC_NULL) {
+        if (has_left_neighbor(rank, num_proc)) {
             if (DEBUG) cout << "(" << rank << ") Waiting on left" << endl;
             MPI_Wait(&send_requests[2], MPI_STATUS_IGNORE);
             MPI_Wait(&receive_requests[2], MPI_STATUS_IGNORE);
             if (DEBUG) cout << "(" << rank << ") Left done waiting" << endl;
         }
-        if (right_proc != MPI_PROC_NULL) {
+        if (has_right_neighbor(rank, num_proc)) {
             if (DEBUG) cout << "(" << rank << ") Waiting on right" << endl;
             MPI_Wait(&send_requests[3], MPI_STATUS_IGNORE);
             MPI_Wait(&receive_requests[3], MPI_STATUS_IGNORE);
@@ -267,7 +262,7 @@ int main() {
 
 
         if (DEBUG) cout << "(" << rank << ") Calculating ghost points" << endl;
-        if (top_proc != MPI_PROC_NULL) {
+        if (has_top_neighbor(rank, num_proc)) {
             int j = 0;
             for (int i = 0; i < local_n; i++) {
                 double right = local_Un[i + 1][j];
@@ -283,7 +278,7 @@ int main() {
             }
         }
 
-        if (bottom_proc != MPI_PROC_NULL) {
+        if (has_bottom_neighbor(rank, num_proc)) {
             int j = local_n - 1;
             for (int i = 0; i < local_n; i++) {
                 double right = local_Un[i + 1][j];
@@ -298,7 +293,7 @@ int main() {
                 local_Unp1[i][local_n - 1] = exact_solution(x(local_a, i), d);
             }
         }
-        if (left_proc != MPI_PROC_NULL) {
+        if (has_left_neighbor(rank, num_proc)) {
             int j = 0;
             for (int i = 0; i < local_n; i++) {
                 double right = local_Un[i + 1][j];
@@ -313,7 +308,7 @@ int main() {
                 local_Unp1[0][i] = exact_solution(a, y(local_c, i));
             }
         }
-        if (right_proc != MPI_PROC_NULL) {
+        if (has_right_neighbor(rank, num_proc)) {
             int j = local_n - 1;
             for (int i = 0; i < local_n; i++) {
                 double right = right_ghost_val[i];

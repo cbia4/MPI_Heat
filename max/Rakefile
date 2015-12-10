@@ -21,7 +21,7 @@ end
 
 task :run do
   puts "Executing #{PARALLEL_2D}"
-  system("mpiexec -n 16 ./#{PARALLEL_2D}")
+  system("mpiexec -n 1 ./#{PARALLEL_2D}")
 end
 
 task :triton do 

@@ -1,3 +1,9 @@
+/*
+ * Colin Biafore
+ * A program that solves the heat equation to steady state
+ * 12/11/15
+ */
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
